@@ -66,7 +66,7 @@ func (f *FileStorage) WriteItem(item FileStorageItem) {
 
 func (f *FileStorage) ReadToChannel(readChannel chan FileStorageItem) {
 	go func() {
-		time.Sleep(time.Second)
+		time.Sleep(time.Second*1)
 		files, err := ioutil.ReadDir(f.cfg.FilePath)
 		if err != nil {
 			log.Printf("Read dir error: %v\n", err)
@@ -77,13 +77,18 @@ func (f *FileStorage) ReadToChannel(readChannel chan FileStorageItem) {
 			}
 
 			f.mxt.Lock()
-			if match, _ := filepath.Match(f.cfg.FileNamePrefix + "*.pwlds", file.Name()); !match {
+			match, _ := filepath.Match(f.cfg.FileNamePrefix + "*.pwlds", file.Name());
+
+			if !match {
 				f.mxt.Unlock()
 				continue
 			}
 			if f.currentFile != nil {
 				fInfo, err := f.currentFile.Stat()
-				if err == nil && fInfo.Name() == file.Name() {
+				if err == nil && fInfo.Name() != f.getFileName() {
+					f.currentFile.Close()
+					f.currentFile = nil
+				} else {
 					f.mxt.Unlock()
 					continue
 				}
@@ -99,9 +104,8 @@ func (f *FileStorage) ReadToChannel(readChannel chan FileStorageItem) {
 								item, err := f.objBuilder.buildByString(line)
 								if err != nil {
 									log.Printf("Error build FileSorageItem: %s, string %s", err.Error(), line)
-								} else {
-									readChannel <- item
 								}
+								readChannel <- item
 							}
 						} else {
 							log.Printf("Error read FileSorageItem: %s, string %s", err.Error(), line)
@@ -119,8 +123,14 @@ func (f *FileStorage) ReadToChannel(readChannel chan FileStorageItem) {
 
 
 func (f *FileStorage) getCurrentFileName() string {
-	return f.cfg.FilePath + f.cfg.FileNamePrefix + time.Now().Format("_2006-01-02_15:04:05") + ".pwlds"
+	return f.cfg.FilePath + f.cfg.FileNamePrefix + f.getFileName()
 }
+
+
+func (f *FileStorage) getFileName() string {
+	return time.Now().Format("_2006-01-02_15:04:05") + ".pwlds"
+}
+
 
 func (f *FileStorage) writeToFile(item FileStorageItem) error {
 	f.mxt.Lock()

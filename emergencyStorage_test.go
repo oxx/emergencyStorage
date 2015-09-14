@@ -9,6 +9,7 @@ import (
 	"reflect"
 	"time"
 
+"math/rand"
 )
 
 
@@ -74,7 +75,7 @@ func (eb *TestBuilderFromString) buildByString(str string) (FileStorageItem, err
 }
 
 func TestStorage(t *testing.T) {
-	conf := FileStorageConfig{"/tmp/", "estest", 10}
+	conf := FileStorageConfig{"/tmp/", RandomString(4), 10}
 	builder := TestBuilder{}
 	storage := NewFileStorage(conf, builder)
 	var testSlice []FileStorageItem
@@ -102,4 +103,14 @@ func TestStorage(t *testing.T) {
 
 
 
+}
+
+func RandomString(strlen int) string {
+	rand.Seed(time.Now().UTC().UnixNano())
+	const chars = "abcdefghijklmnopqrstuvwxyz0123456789"
+	result := make([]byte, strlen)
+	for i := 0; i < strlen; i++ {
+		result[i] = chars[rand.Intn(len(chars))]
+	}
+	return string(result)
 }
