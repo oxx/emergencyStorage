@@ -18,7 +18,7 @@ type FileStorageConfig struct {
 }
 
 type FileStorageObjectBuilder interface {
-	New() interface{ buildByString(str string) (FileStorageItem, error)}
+	New() interface{ BuildByString(str string) (FileStorageItem, error)}
 }
 
 type FileStorageItem interface {
@@ -31,7 +31,7 @@ type FileStorage struct {
 	cfg          FileStorageConfig
 	writeChannel chan FileStorageItem
 	currentFile  *os.File
-	objBuilder   interface{ buildByString(str string) (FileStorageItem, error)}
+	objBuilder   interface{ BuildByString(str string) (FileStorageItem, error)}
 	mxt          sync.Mutex
 }
 
@@ -101,7 +101,7 @@ func (f *FileStorage) ReadToChannel(readChannel chan FileStorageItem) {
 					for _, line := range lines {
 						if line != "" {
 							if err == nil {
-								item, err := f.objBuilder.buildByString(line)
+								item, err := f.objBuilder.BuildByString(line)
 								if err != nil {
 									log.Printf("Error build FileSorageItem: %s, string %s", err.Error(), line)
 								}

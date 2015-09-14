@@ -58,11 +58,11 @@ func NewTestObject(str string) TestObj {
 }
 
 
-func (e TestBuilder) New() interface{ buildByString(str string) (FileStorageItem, error)} {
+func (e TestBuilder) New() interface{ BuildByString(str string) (FileStorageItem, error)} {
 	return &TestBuilderFromString{}
 }
 
-func (eb *TestBuilderFromString) buildByString(str string) (FileStorageItem, error) {
+func (eb *TestBuilderFromString) BuildByString(str string) (FileStorageItem, error) {
 	if strings.Contains(str, TestObj{}.GetStringIdent()) {
 		var obj = TestObj{}
 		err := json.Unmarshal([]byte(str), &obj)
