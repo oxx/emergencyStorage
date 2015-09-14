@@ -75,7 +75,7 @@ func (eb *TestBuilderFromString) BuildByString(str string) (FileStorageItem, err
 }
 
 func TestStorage(t *testing.T) {
-	conf := FileStorageConfig{"/tmp/", RandomString(4), 10}
+	conf := FileStorageConfig{"/tmp/", RandomString(4), 10, "/tmp/emStorage.log"}
 	builder := TestBuilder{}
 	storage := NewFileStorage(conf, builder)
 	var testSlice []FileStorageItem
