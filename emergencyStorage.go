@@ -66,7 +66,7 @@ func (f *FileStorage) WriteItem(item FileStorageItem) {
 
 func (f *FileStorage) ReadToChannel(readChannel chan FileStorageItem) {
 	go func() {
-		time.Sleep(time.Second*1)
+		time.Sleep(time.Second * 1)
 		files, err := ioutil.ReadDir(f.cfg.FilePath)
 		if err != nil {
 			log.Printf("Read dir error: %v\n", err)

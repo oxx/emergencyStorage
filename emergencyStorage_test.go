@@ -9,7 +9,7 @@ import (
 	"reflect"
 	"time"
 
-"math/rand"
+	"math/rand"
 )
 
 
@@ -87,7 +87,7 @@ func TestStorage(t *testing.T) {
 
 	readChannel := make(chan FileStorageItem, 10)
 	var rSlice  []FileStorageItem
-	timer := time.NewTimer(time.Second *3).C
+	timer := time.NewTimer(time.Second * 3).C
 	storage.ReadToChannel(readChannel)
 	for {
 		select {
