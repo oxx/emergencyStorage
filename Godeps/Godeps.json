@@ -1,0 +1,5 @@
+{
+	"ImportPath": "github.com/oxx/emergencyStorage",
+	"GoVersion": "go1.4",
+	"Deps": []
+}
