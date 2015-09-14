@@ -86,18 +86,13 @@ func TestStorage(t *testing.T) {
 
 	readChannel := make(chan FileStorageItem, 10)
 	var rSlice  []FileStorageItem
-	tiker := time.NewTicker(time.Second).C
+	timer := time.NewTimer(time.Second *3).C
 	storage.ReadToChannel(readChannel)
-	tikerCount :=0
 	for {
 		select {
 		case rObj := <-readChannel:
 			rSlice = append(rSlice, rObj)
-		case <-tiker:
-			if len(rSlice) < 10 || tikerCount > 5 {
-				tikerCount++
-				continue
-			}
+		case <-timer:
 			if !reflect.DeepEqual(testSlice, rSlice) {
 				t.Errorf("Expected equeal slices")
 			}

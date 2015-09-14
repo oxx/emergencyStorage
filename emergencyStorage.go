@@ -18,7 +18,7 @@ type FileStorageConfig struct {
 }
 
 type FileStorageObjectBuilder interface {
-	New() interface { buildByString(str string) (FileStorageItem, error)}
+	New() interface{ buildByString(str string) (FileStorageItem, error)}
 }
 
 type FileStorageItem interface {
@@ -31,8 +31,8 @@ type FileStorage struct {
 	cfg          FileStorageConfig
 	writeChannel chan FileStorageItem
 	currentFile  *os.File
-	objBuilder   interface { buildByString(str string) (FileStorageItem, error)}
-	mxt sync.Mutex
+	objBuilder   interface{ buildByString(str string) (FileStorageItem, error)}
+	mxt          sync.Mutex
 }
 
 
@@ -66,7 +66,7 @@ func (f *FileStorage) WriteItem(item FileStorageItem) {
 
 func (f *FileStorage) ReadToChannel(readChannel chan FileStorageItem) {
 	go func() {
-
+		time.Sleep(time.Second)
 		files, err := ioutil.ReadDir(f.cfg.FilePath)
 		if err != nil {
 			log.Printf("Read dir error: %v\n", err)
@@ -77,17 +77,19 @@ func (f *FileStorage) ReadToChannel(readChannel chan FileStorageItem) {
 			}
 
 			f.mxt.Lock()
-			if match, _ := filepath.Match("*.pwlds", file.Name()); !match {
-				if f.currentFile != nil {
-					fInfo, err := f.currentFile.Stat()
-					if err == nil || fInfo.Name() == file.Name() {
-						f.mxt.Unlock()
-						continue
-					}
+			if match, _ := filepath.Match(f.cfg.FileNamePrefix + "*.pwlds", file.Name()); !match {
+				f.mxt.Unlock()
+				continue
+			}
+			if f.currentFile != nil {
+				fInfo, err := f.currentFile.Stat()
+				if err == nil && fInfo.Name() == file.Name() {
+					f.mxt.Unlock()
+					continue
 				}
 			}
 			f.mxt.Unlock()
-			curFile, err := os.OpenFile(f.cfg.FilePath + file.Name(), os.O_RDONLY, 0666)
+			curFile, err := os.OpenFile(f.cfg.FilePath + file.Name(), os.O_RDWR, 0666)
 			if err == nil {
 				lines, err := f.readFileLines(curFile)
 				if err == nil {
@@ -97,8 +99,9 @@ func (f *FileStorage) ReadToChannel(readChannel chan FileStorageItem) {
 								item, err := f.objBuilder.buildByString(line)
 								if err != nil {
 									log.Printf("Error build FileSorageItem: %s, string %s", err.Error(), line)
+								} else {
+									readChannel <- item
 								}
-								readChannel <- item
 							}
 						} else {
 							log.Printf("Error read FileSorageItem: %s, string %s", err.Error(), line)
@@ -106,7 +109,7 @@ func (f *FileStorage) ReadToChannel(readChannel chan FileStorageItem) {
 					}
 				}
 				curFile.Close()
-				os.Remove(f.cfg.FilePath + file.Name())
+				err = os.Remove(f.cfg.FilePath + file.Name())
 			}
 
 		}
@@ -116,7 +119,7 @@ func (f *FileStorage) ReadToChannel(readChannel chan FileStorageItem) {
 
 
 func (f *FileStorage) getCurrentFileName() string {
-	return f.cfg.FilePath + f.cfg.FileNamePrefix + time.Now().Format("_2006-01-02_15:04") + ".pwlds"
+	return f.cfg.FilePath + f.cfg.FileNamePrefix + time.Now().Format("_2006-01-02_15:04:05") + ".pwlds"
 }
 
 func (f *FileStorage) writeToFile(item FileStorageItem) error {
