@@ -8,17 +8,12 @@ import (
 	"path/filepath"
 	"sync"
 	log "github.com/Sirupsen/logrus"
-	"fmt"
-	"os/signal"
-	"syscall"
 )
-
 
 type FileStorageConfig struct {
 	FilePath           string `json:"filePath" bson:"filePath"`
 	FileNamePrefix     string  `json:"fileNamePrefix" bson:"fileNamePrefix"`
 	ChannelBufferLimit int64 `json:"channelBufferLimit" bson:"channelBufferLimit"`
-	LogFile            string `json:"logFile" bson:"logFile"`
 }
 
 type FileStorageObjectBuilder interface {
@@ -46,32 +41,13 @@ func NewFileStorage(cfg FileStorageConfig, objBuilder FileStorageObjectBuilder) 
 	result.writeChannel = make(chan FileStorageItem, result.cfg.ChannelBufferLimit)
 	result.objBuilder = objBuilder.New()
 
-	LogFile, err := os.OpenFile(result.cfg.LogFile, os.O_RDWR | os.O_CREATE | os.O_APPEND, os.FileMode(0755))
-	if err != nil {
-		fmt.Println(err.Error())
-		os.Exit(1)
-	}
-	log.SetOutput(LogFile)
-	log.SetFormatter(&log.JSONFormatter{})
-
+	
 	file, err := os.OpenFile(result.getCurrentFileName(), os.O_CREATE | os.O_RDWR, 0666)
 	result.currentFile = nil
 	if err != nil {
 		log.Errorf("Error open filestorage: %s", err.Error())
 
 	}
-
-	go func() {
-		sigchanUsr1 := make(chan os.Signal, 10)
-		signal.Notify(sigchanUsr1, syscall.SIGUSR1)
-		<-sigchanUsr1
-		LogFile.Close()
-		LogFile, err = os.OpenFile(cfg.LogFile, os.O_RDWR|os.O_CREATE|os.O_APPEND, os.FileMode(0755))
-		log.SetOutput(LogFile)
-		if err != nil {
-			fmt.Print(err)
-		}
-	}()
 	file.Close()
 
 	go func(itChan chan FileStorageItem) {
