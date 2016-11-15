@@ -1,23 +1,25 @@
 package emergancyStorage
 
 import (
-	"os"
 	"bufio"
-	"time"
+	log "github.com/Sirupsen/logrus"
 	"io/ioutil"
+	"os"
 	"path/filepath"
 	"sync"
-	log "github.com/Sirupsen/logrus"
+	"time"
 )
 
 type FileStorageConfig struct {
 	FilePath           string `json:"filePath" bson:"filePath"`
-	FileNamePrefix     string  `json:"fileNamePrefix" bson:"fileNamePrefix"`
-	ChannelBufferLimit int64 `json:"channelBufferLimit" bson:"channelBufferLimit"`
+	FileNamePrefix     string `json:"fileNamePrefix" bson:"fileNamePrefix"`
+	ChannelBufferLimit int64  `json:"channelBufferLimit" bson:"channelBufferLimit"`
 }
 
 type FileStorageObjectBuilder interface {
-	New() interface{ BuildByString(str string) (FileStorageItem, error)}
+	New() interface {
+		BuildByString(str string) (FileStorageItem, error)
+	}
 }
 
 type FileStorageItem interface {
@@ -30,10 +32,11 @@ type FileStorage struct {
 	cfg          FileStorageConfig
 	writeChannel chan FileStorageItem
 	currentFile  *os.File
-	objBuilder   interface{ BuildByString(str string) (FileStorageItem, error)}
-	mxt          sync.Mutex
+	objBuilder   interface {
+		BuildByString(str string) (FileStorageItem, error)
+	}
+	mxt sync.Mutex
 }
-
 
 func NewFileStorage(cfg FileStorageConfig, objBuilder FileStorageObjectBuilder) *FileStorage {
 	result := FileStorage{}
@@ -41,8 +44,7 @@ func NewFileStorage(cfg FileStorageConfig, objBuilder FileStorageObjectBuilder) 
 	result.writeChannel = make(chan FileStorageItem, result.cfg.ChannelBufferLimit)
 	result.objBuilder = objBuilder.New()
 
-	
-	file, err := os.OpenFile(result.getCurrentFileName(), os.O_CREATE | os.O_RDWR, 0666)
+	file, err := os.OpenFile(result.getCurrentFileName(), os.O_CREATE|os.O_RDWR, 0666)
 	result.currentFile = nil
 	if err != nil {
 		log.Errorf("Error open filestorage: %s", err.Error())
@@ -76,7 +78,7 @@ func (f *FileStorage) ReadToChannel(readChannel chan FileStorageItem) {
 			}
 
 			f.mxt.Lock()
-			match, _ := filepath.Match(f.cfg.FileNamePrefix + "*.pwlds", file.Name());
+			match, _ := filepath.Match(f.cfg.FileNamePrefix+"*.pwlds", file.Name())
 
 			if !match {
 				f.mxt.Unlock()
@@ -93,7 +95,7 @@ func (f *FileStorage) ReadToChannel(readChannel chan FileStorageItem) {
 				}
 			}
 			f.mxt.Unlock()
-			curFile, err := os.OpenFile(f.cfg.FilePath + file.Name(), os.O_RDWR, 0666)
+			curFile, err := os.OpenFile(f.cfg.FilePath+file.Name(), os.O_RDWR, 0666)
 			if err == nil {
 				lines, err := f.readFileLines(curFile)
 				if err == nil {
@@ -120,16 +122,13 @@ func (f *FileStorage) ReadToChannel(readChannel chan FileStorageItem) {
 	}()
 }
 
-
 func (f *FileStorage) getCurrentFileName() string {
 	return f.cfg.FilePath + f.cfg.FileNamePrefix + f.getFileName()
 }
 
-
 func (f *FileStorage) getFileName() string {
 	return time.Now().Format("_2006-01-02_15:04:05") + ".pwlds"
 }
-
 
 func (f *FileStorage) writeToFile(item FileStorageItem) error {
 	f.mxt.Lock()
@@ -137,10 +136,10 @@ func (f *FileStorage) writeToFile(item FileStorageItem) error {
 		fInfo, err := f.currentFile.Stat()
 		if err != nil || fInfo.Name() != f.getCurrentFileName() {
 			f.currentFile.Close()
-			f.currentFile, err = os.OpenFile(f.getCurrentFileName(), os.O_CREATE | os.O_RDWR | os.O_APPEND, 0666)
+			f.currentFile, err = os.OpenFile(f.getCurrentFileName(), os.O_CREATE|os.O_RDWR|os.O_APPEND, 0666)
 		}
 	} else {
-		f.currentFile, _ = os.OpenFile(f.getCurrentFileName(), os.O_CREATE | os.O_RDWR | os.O_APPEND, 0666)
+		f.currentFile, _ = os.OpenFile(f.getCurrentFileName(), os.O_CREATE|os.O_RDWR|os.O_APPEND, 0666)
 	}
 
 	lineBytes, err := item.MarshalBinary()
@@ -158,7 +157,7 @@ func (f *FileStorage) writeToFile(item FileStorageItem) error {
 }
 
 func (f *FileStorage) readFileLines(file *os.File) ([]string, error) {
-	var result  []string
+	var result []string
 	scanner := bufio.NewScanner(file)
 	scanner.Split(bufio.ScanLines)
 	for scanner.Scan() {
